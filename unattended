@@ -1,0 +1,77 @@
+# 1. MAKING THE SYSTEM WORK. DO NOT REMOVE
+mount -t tmpfs tmp /run
+mkdir -p /run/systemd
+mount / -o remount,rw
+sed -i 's| init=.*||' /boot/cmdline.txt
+
+# 2. THE USEFUL PART OF THE SCRIPT
+# 2.1 Loading the env file
+if [[ -f "/boot/.env" ]]; then
+    source "/boot/.env"
+fi
+
+# Set timezone
+raspi-config nonint do_change_timezone "$TIME_ZONE"
+
+# 2.8 Static IP config
+tee -a /etc/dhcpcd.conf > /dev/null <<EOT
+interface eth0
+static ip_address=${IP_ADDRESS}
+static routers=${GATEWAY}
+static domain_name_servers=${DNS}
+EOT
+
+# ip addr flush dev eth0
+# ifdown eth0
+# ifup eth0
+
+systemctl start dhcpcd@eth0.service
+
+echo "IP address: "
+hostname -I | awk '{print $1}'
+
+# 2.2 Enable SSH
+raspi-config nonint do_ssh 0
+
+# 2.3 Set password for user
+# TODO: add this to an env file!
+echo -e "${PASSWORD}\n${PASSWORD}" | passwd ${USERNAME}
+
+# 2.4 Auto-mount external HDD
+tee -a /etc/fstab > /dev/null <<EOT
+# External Media Volume
+UUID=${DISK_UUID}    ${MOUNT_POINT}    ntfs-3g    defaults,users,uid=${PUID},gid=${PGID},umask=022,utf8,nofail    0    0
+EOT
+
+# 2.5 Update packages
+apt-get update
+
+# 2.6 Install Docker and Docker Compose
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+usermod -aG docker ${USERNAME}
+apt-get install -y libffi-dev libssl-dev python3 python3-pip > /dev/null
+pip3 -v install docker-compose
+
+# 2.7 Install Docker containers
+sudo -u ${USERNAME} cp /boot/.env /home/${USERNAME}/docker-setup/
+sudo -u ${USERNAME} cp /boot/docker-compose.yml /home/${USERNAME}/docker-setup/
+sudo -u ${USERNAME} mkdir -p \
+    /home/${USERNAME}/.pihole/etc-pihole/ \
+    /home/${USERNAME}/.pihole/etc-dnsmasq.d/ \
+    /home/${USERNAME}/.pihole/var-log/ \
+    /home/${USERNAME}/.qbittorent/config \
+    /home/${USERNAME}/Downloads
+sudo -u ${USERNAME} touch /home/${USERNAME}/.pihole/var-log/pihole.log
+
+
+(sudo -u ${USERNAME} crontab -l 2>/dev/null; echo "@reboot sleep 60 && cd /home/${USERNAME}/docker-setup && docker-compose up -d")| sudo -u ${USERNAME} crontab -
+
+# 3. CLEANING UP AND REBOOTING
+sync
+umount /boot
+mount / -o remount,ro
+sync
+echo 1 > /proc/sys/kernel/sysrq
+echo b > /proc/sysrq-trigger
+sleep 5
