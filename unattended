@@ -36,6 +36,11 @@ echo "Static IP set"
 echo -e "${PASSWORD}\n${PASSWORD}" | passwd ${USERNAME}
 echo "Password set"
 
+# Grant Docker access to user
+groupadd docker
+usermod -aG docker ${USERNAME}
+echo "Docker access granted"
+
 # 2.4 Auto-mount external HDD
 tee -a /etc/fstab > /dev/null <<EOT
 # External Media Volume
