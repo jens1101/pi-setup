@@ -23,6 +23,6 @@ docker-compose up -d --quiet-pull
 echo "Containers started"
 
 systemctl disable first-boot
-rm -f /etc/systemd/system/first-boot.service ./.env
+echo "Disabled service"
 
 reboot
