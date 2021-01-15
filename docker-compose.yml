@@ -44,23 +44,16 @@ services:
       - "~/Downloads:/downloads"
     restart: always
   samba:
-    image: dperson/samba
-    ports:
-      - "137:137/udp"
-      - "138:138/udp"
-      - "139:139/tcp"
-      - "445:445/tcp"
+    image: elswork/samba
     environment:
-      - TZ=${TIME_ZONE}
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - WORKGROUP=workgroup
-      - USER=${USERNAME};${PASSWORD}
-      - RECYCLE=true
-      - SHARE=Media;/mnt;yes;no;no;;${USERNAME}
+      TZ: ${TIME_ZONE}
+    networks:
+      - default
+    ports:
+      - "445:445"
     volumes:
-      - ${MOUNT_POINT}:/mnt
-    tmpfs:
-      - /tmp
-    read_only: true
+      - ${MOUNT_POINT}:/share
+    command: '-u "${PUID}:${PGID}:${USERNAME}:${USERNAME}:${PASSWORD}" -s "Media:/share:rw:${USERNAME}"'
     restart: always
+networks:
+  default:
