@@ -73,8 +73,8 @@ Description=Setup on first boot
 [Service]
 WorkingDirectory=/home/${USERNAME}/docker-setup/
 ExecStart=/home/${USERNAME}/docker-setup/first-boot.sh
-User=root
-Group=root
+User=pi
+Group=pi
 [Install]
 WantedBy=multi-user.target
 EOT
