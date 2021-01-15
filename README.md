@@ -5,3 +5,5 @@
   - Schedule alternative download speeds
   - Set password
 - Change default "pi" user to something else.
+- Fix the numbering
+- Add proper comments
