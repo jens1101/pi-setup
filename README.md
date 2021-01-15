@@ -7,3 +7,4 @@
 - Change default "pi" user to something else.
 - Fix the numbering
 - Add proper comments
+- Setup Nginx reverse proxy
