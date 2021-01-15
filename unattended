@@ -9,63 +9,75 @@ sed -i 's| init=.*||' /boot/cmdline.txt
 if [[ -f "/boot/.env" ]]; then
     source "/boot/.env"
 fi
+echo ".env loaded"
 
 # Set timezone
 raspi-config nonint do_change_timezone "$TIME_ZONE"
+echo "Time zone set"
 
-# 2.8 Static IP config
+# 2.2 Enable SSH
+raspi-config nonint do_ssh 0
+echo "SSH enabled"
+
+# Expand file system
+sudo raspi-config nonint do_expand_rootfs
+echo "File system expanded"
+
+# Static IP config
 tee -a /etc/dhcpcd.conf > /dev/null <<EOT
 interface eth0
 static ip_address=${IP_ADDRESS}
 static routers=${GATEWAY}
 static domain_name_servers=${DNS}
 EOT
-
-# ip addr flush dev eth0
-# ifdown eth0
-# ifup eth0
-
-systemctl start dhcpcd@eth0.service
-
-echo "IP address: "
-hostname -I | awk '{print $1}'
-
-# 2.2 Enable SSH
-raspi-config nonint do_ssh 0
+echo "Static IP set"
 
 # 2.3 Set password for user
-# TODO: add this to an env file!
 echo -e "${PASSWORD}\n${PASSWORD}" | passwd ${USERNAME}
+echo "Password set"
 
 # 2.4 Auto-mount external HDD
 tee -a /etc/fstab > /dev/null <<EOT
 # External Media Volume
 UUID=${DISK_UUID}    ${MOUNT_POINT}    ntfs-3g    defaults,users,uid=${PUID},gid=${PGID},umask=022,utf8,nofail    0    0
 EOT
+echo "Fstab configured"
 
-# 2.5 Update packages
-apt-get update
-
-# 2.6 Install Docker and Docker Compose
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-usermod -aG docker ${USERNAME}
-apt-get install -y libffi-dev libssl-dev python3 python3-pip > /dev/null
-pip3 -v install docker-compose
-
-# 2.7 Install Docker containers
-sudo -u ${USERNAME} cp /boot/.env /home/${USERNAME}/docker-setup/
-sudo -u ${USERNAME} cp /boot/docker-compose.yml /home/${USERNAME}/docker-setup/
+# 2.7 Setup Docker containers
 sudo -u ${USERNAME} mkdir -p \
     /home/${USERNAME}/.pihole/etc-pihole/ \
     /home/${USERNAME}/.pihole/etc-dnsmasq.d/ \
     /home/${USERNAME}/.pihole/var-log/ \
     /home/${USERNAME}/.qbittorent/config \
-    /home/${USERNAME}/Downloads
+    /home/${USERNAME}/Downloads/ \
+    /home/${USERNAME}/docker-setup/
+echo "Home directories created"
+
 sudo -u ${USERNAME} touch /home/${USERNAME}/.pihole/var-log/pihole.log
+sudo -u ${USERNAME} cp /boot/.env /home/${USERNAME}/docker-setup/
+sudo -u ${USERNAME} cp /boot/docker-compose.yml /home/${USERNAME}/docker-setup/
+chmod +x /boot/first-boot.sh
+sudo -u ${USERNAME} cp /boot/first-boot.sh /home/${USERNAME}/docker-setup/
+echo "Files copied"
 
+# Setting up first boot script
+touch  /etc/systemd/system/first-boot.service
 
-(sudo -u ${USERNAME} crontab -l 2>/dev/null; echo "@reboot sleep 60 && cd /home/${USERNAME}/docker-setup && docker-compose up -d")| sudo -u ${USERNAME} crontab -
+tee -a /etc/systemd/system/first-boot.service > /dev/null <<EOT
+[Unit]
+Description=Setup on first boot
+[Service]
+WorkingDirectory=/home/${USERNAME}/docker-setup/
+ExecStart=/home/${USERNAME}/docker-setup/first-boot.sh
+User=root
+Group=root
+[Install]
+WantedBy=multi-user.target
+EOT
+echo "Service file created"
+
+systemctl enable first-boot
+echo "Service enabled"
 
 # 3. CLEANING UP AND REBOOTING
 sync
