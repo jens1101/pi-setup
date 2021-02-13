@@ -54,7 +54,6 @@ sudo -u ${USERNAME} mkdir -p \
     /home/${USERNAME}/.pihole/etc-dnsmasq.d/ \
     /home/${USERNAME}/.pihole/var-log/ \
     /home/${USERNAME}/.qbittorent/config \
-    /home/${USERNAME}/Downloads/ \
     /home/${USERNAME}/docker-setup/
 echo "Home directories created"
 

@@ -39,7 +39,7 @@ services:
       WEBUI_PORT: "8080"
     volumes:
       - "~/.qbittorent/config:/config"
-      - "~/Downloads:/downloads"
+      - ${MOUNT_POINT}:/downloads
     restart: always
   samba:
     image: elswork/samba
