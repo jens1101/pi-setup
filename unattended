@@ -11,19 +11,19 @@ if [[ -f "/boot/.env" ]]; then
 fi
 echo ".env loaded"
 
-# Set timezone
+# 2.2 Set timezone
 raspi-config nonint do_change_timezone "$TIME_ZONE"
 echo "Time zone set"
 
-# 2.2 Enable SSH
+# 2.3 Enable SSH
 raspi-config nonint do_ssh 0
 echo "SSH enabled"
 
-# Expand file system
+# 2.4 Expand file system
 sudo raspi-config nonint do_expand_rootfs
 echo "File system expanded"
 
-# Static IP config
+# 2.5 Static IP config
 tee -a /etc/dhcpcd.conf > /dev/null <<EOT
 interface eth0
 static ip_address=${IP_ADDRESS}
@@ -32,23 +32,23 @@ static domain_name_servers=${DNS}
 EOT
 echo "Static IP set"
 
-# 2.3 Set password for user
+# 2.6 Set password for user
 echo -e "${PASSWORD}\n${PASSWORD}" | passwd ${USERNAME}
 echo "Password set"
 
-# Grant Docker access to user
+# 2.7 Grant Docker access to user
 groupadd docker
 usermod -aG docker ${USERNAME}
 echo "Docker access granted"
 
-# 2.4 Auto-mount external HDD
+# 2.8 Auto-mount external HDD
 tee -a /etc/fstab > /dev/null <<EOT
 # External Media Volume
 UUID=${DISK_UUID}    ${MOUNT_POINT}    ntfs-3g    defaults,users,uid=${PUID},gid=${PGID},umask=022,utf8,nofail    0    0
 EOT
 echo "Fstab configured"
 
-# 2.7 Setup Docker containers
+# 2.9 Setup Docker containers
 sudo -u ${USERNAME} mkdir -p \
     /home/${USERNAME}/.pihole/etc-pihole/ \
     /home/${USERNAME}/.pihole/etc-dnsmasq.d/ \
@@ -63,7 +63,7 @@ chmod +x /boot/first-boot.sh
 sudo -u ${USERNAME} cp /boot/first-boot.sh /home/${USERNAME}/docker-setup/
 echo "Files copied"
 
-# Setting up first boot script
+# 2.10 Setting up first boot script
 touch  /etc/systemd/system/first-boot.service
 
 tee -a /etc/systemd/system/first-boot.service > /dev/null <<EOT
