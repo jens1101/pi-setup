@@ -37,3 +37,28 @@ The following is automatically been set up:
 8. Remove the SD card from your machine.
 9. Insert it into the Raspberry Pi and wait.
 10. Typically when the green LED stops flashing then the setup is completed.
+
+# Troubleshooting
+
+## Cannot connect to SAMBA share
+
+This typically happens when the folder SAMBA is trying to share does not exist.
+For example if you are sharing an external hard drive and it fails to mount then
+the SAMBA share will fail too. To fix this specific scenario do the following:
+
+1. Run `sudo shutdown -h now`
+2. Unplug your Raspberry Pi
+3. Plug it back in and make sure that the hard drive spins up. You can typically
+   hear and feel the vibrations as the disks spin up.
+   - If this doesn't work then try another USB port
+   - If you are using a hard drive without its own power supply then your Pi's
+     power supply might not be powerful enough. It is recommended to use an
+     official Raspberry Pi power supply or a hard drive with it's own power
+     supply.
+4. Once the Pi is booted then SSH to the Pi and make sure that the hard drive
+   is mounted.
+5. The SAMBA share should now be accessible. If not then continue.
+6. `cd docker-setup/`
+7. `docker-compose stop`
+8. `docker-compose start -d`
+9. After a moment the share should now be accessible.
