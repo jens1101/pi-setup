@@ -1,7 +1,39 @@
 #cloud-config
 autoinstall:
   version: 1
+  early-commands:
+    #  TODO: copy over the docker files and maybe add env variables
+    - ping -c1 198.162.1.1
+  locale: en_ZA
+  keyboard:
+    layout: en
+    variant: us
+  network:
+    version: 2
+    ethernets:
+      enp0s25:
+        dhcp4: yes
+  storage:
+    layout:
+      name: lvm
+      match:
+        ssd: yes
+        size: smallest
   identity:
-    hostname: ubuntu-server
-    password: "$6$exDY1mhS4KUYCE/2$zmn9ToZwTKLhCw.b4/b.ZRTIZM30JZ4QrOQ2aOXJ8yk96xpcCof0kxKwuX1kqLG/ygbJ1f8wxED22bTL4F46P0"
-    username: ubuntu
+    hostname: home-server
+    username: admin
+    #  TODO: implement
+    password: $crypted_pass
+  ssh:
+    install-server: yes
+    allow-pw: true
+  packages:
+    #  TODO: implement
+    - libreoffice
+    - dns-server^
+  user-data:
+    # TODO: potentially add the groups here
+    disable_root: false
+  late-commands:
+    # TODO: install docker here and add the docker-compose service
+    - sed -ie 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=30/' /target/etc/default/grub
