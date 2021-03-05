@@ -2,8 +2,9 @@
 autoinstall:
   version: 1
   early-commands:
-    #  TODO: copy over the docker files and maybe add env variables
-    - ping -c1 198.162.1.1
+    - apt-get -qq update
+    - apt-get -qq install -y envsubst
+    - set -a && source /.env && set +a && envsubst < /autoinstall.yaml
   locale: en_ZA
   keyboard:
     layout: en
@@ -12,7 +13,10 @@ autoinstall:
     version: 2
     ethernets:
       enp0s25:
-        dhcp4: yes
+        addresses: [$IP_ADDRESS]
+        gateway4: $GATEWAY
+        nameservers:
+          addresses: [$DNS]
   storage:
     layout:
       name: lvm
@@ -20,20 +24,32 @@ autoinstall:
         ssd: yes
         size: smallest
   identity:
-    hostname: home-server
-    username: admin
-    #  TODO: implement
-    password: $crypted_pass
+    hostname: $HOST_NAME
+    username: $USERNAME
+    password: $ENCRYPTED_PASSWORD
   ssh:
     install-server: yes
     allow-pw: true
   packages:
-    #  TODO: implement
-    - libreoffice
-    - dns-server^
+    - curl
+    - libffi-dev
+    - libssl-dev
+    - python3
+    - python3-pip
   user-data:
-    # TODO: potentially add the groups here
-    disable_root: false
+    groups:
+      - docker: [$USERNAME]
   late-commands:
-    # TODO: install docker here and add the docker-compose service
-    - sed -ie 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=30/' /target/etc/default/grub
+    - tee -a /target/etc/fstab > /target/dev/null <<EOT
+      UUID=${DISK_UUID}    ${MOUNT_POINT}    ntfs-3g    defaults,users,uid=${PUID},gid=${PGID},umask=022,utf8    0    0
+      EOT
+    - sudo -u ${USERNAME} mkdir -p \
+      /target/home/${USERNAME}/.pihole/etc-pihole/ \
+      /target/home/${USERNAME}/.pihole/etc-dnsmasq.d/ \
+      /target/home/${USERNAME}/.pihole/var-log/ \
+      /target/home/${USERNAME}/.qbittorent/config
+    - sudo -u ${USERNAME} cp /.env /target/home/${USERNAME}/
+    - sudo -u ${USERNAME} cp /docker-compose.yml /target/home/${USERNAME}/
+    - curtin in-target --target=/target -- curl -sSL https://get.docker.com | sh
+    - curtin in-target --target=/target -- pip3 -qq install docker-compose > /dev/null
+# TODO: create a systemd service that automatically stops and starts docker-compose on reboot

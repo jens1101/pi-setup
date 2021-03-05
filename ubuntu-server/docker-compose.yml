@@ -1,0 +1,57 @@
+version: "3"
+
+# https://github.com/pi-hole/docker-pi-hole/blob/master/README.md
+
+services:
+  pihole:
+    image: pihole/pihole
+    # For DHCP it is recommended to remove these ports and instead add: network_mode: "host"
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "67:67/udp"
+      - "80:80/tcp"
+      - "443:443/tcp"
+    environment:
+      TZ: ${TIME_ZONE}
+      WEBPASSWORD: ${PASSWORD}
+      ServerIP: ${IP_ADDRESS}
+    # Volumes store your data between container upgrades
+    volumes:
+      - "~/.pihole/etc-pihole/:/etc/pihole/"
+      - "~/.pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/"
+    # Recommended but not required (DHCP needs NET_ADMIN)
+    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    cap_add:
+      - NET_ADMIN
+    restart: on-failure
+  qbittorent:
+    image: linuxserver/qbittorrent
+    ports:
+      - "6881:6881"
+      - "6881:6881/udp"
+      - "8080:8080"
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIME_ZONE}
+      UMASK_SET: "022"
+      WEBUI_PORT: "8080"
+    volumes:
+      - "~/.qbittorent/config:/config"
+      - ${MOUNT_POINT}:/downloads
+    restart: on-failure
+  samba:
+    image: elswork/samba
+    environment:
+      TZ: ${TIME_ZONE}
+    networks:
+      - default
+    ports:
+      - "445:445"
+    volumes:
+      - ${MOUNT_POINT}:/share
+    command: '-u "${PUID}:${PGID}:${USERNAME}:${USERNAME}:${PASSWORD}" -s "Media:/share:rw:${USERNAME}"'
+    restart: on-failure
+networks:
+  default:
