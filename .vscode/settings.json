@@ -1,8 +1,0 @@
-{
-    "yaml.schemas": {
-        "./ubuntu-server/autoinstall.schema.json": [
-            "meta-data",
-            "user-data"
-        ]
-    }
-}
