@@ -2,9 +2,14 @@
 autoinstall:
   version: 1
   early-commands:
-    - apt-get -qq update
-    - apt-get -qq install -y envsubst
-    - set -a && source /.env && set +a && envsubst < /autoinstall.yaml
+    - find / -name "autoinstall.yaml"
+    - find / -name "sample.env"
+    - exit 1
+    - apt-get -qq update > /dev/null
+    - apt-get -qq install -y gettext-base moreutils > /dev/null
+    - set -a && . /.env && set +a && \
+      envsubst < /autoinstall.yaml | sponge /autoinstall.yaml
+    - cat /autoinstall.yaml
   locale: en_ZA
   keyboard:
     layout: en
