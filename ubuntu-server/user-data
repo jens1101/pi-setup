@@ -40,7 +40,7 @@ autoinstall:
     groups:
       - docker: [$USERNAME]
   late-commands:
-    - tee -a /target/etc/fstab > /target/dev/null <<EOT
+    - tee -a /target/etc/fstab > /dev/null <<EOT
       UUID=${DISK_UUID}    ${MOUNT_POINT}    ntfs-3g    defaults,users,uid=${PUID},gid=${PGID},umask=022,utf8    0    0
       EOT
     - sudo -u ${USERNAME} mkdir -p \
